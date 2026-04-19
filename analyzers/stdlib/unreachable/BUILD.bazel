@@ -1,0 +1,9 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "unreachable",
+    srcs = ["unreachable.go"],
+    importpath = "github.com/bazel-contrib/rules_nogo/analyzers/stdlib/unreachable",
+    visibility = ["//visibility:public"],
+    deps = ["@org_golang_x_tools//go/analysis/passes/unreachable"],
+)

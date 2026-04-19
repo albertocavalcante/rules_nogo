@@ -1,0 +1,9 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "structtag",
+    srcs = ["structtag.go"],
+    importpath = "github.com/bazel-contrib/rules_nogo/analyzers/stdlib/structtag",
+    visibility = ["//visibility:public"],
+    deps = ["@org_golang_x_tools//go/analysis/passes/structtag"],
+)

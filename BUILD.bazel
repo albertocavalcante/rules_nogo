@@ -1,0 +1,16 @@
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+
+# Expose go.mod and go.sum for go_deps extension.
+exports_files([
+    "go.mod",
+    "go.sum",
+])
+
+bzl_library(
+    name = "rules_nogo",
+    srcs = [],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//nogo:nogo_bzl",
+    ],
+)

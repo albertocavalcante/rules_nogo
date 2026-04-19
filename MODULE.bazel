@@ -1,0 +1,32 @@
+module(
+    name = "rules_nogo",
+    version = "0.1.0",
+    compatibility_level = 1,
+)
+
+bazel_dep(name = "rules_go", version = "0.60.0")
+bazel_dep(name = "gazelle", version = "0.42.0")
+bazel_dep(name = "bazel_skylib", version = "1.8.2")
+bazel_dep(name = "platforms", version = "1.0.0")
+bazel_dep(name = "buildifier_prebuilt", version = "8.5.1", dev_dependency = True)
+
+go_sdk = use_extension("@rules_go//go:extensions.bzl", "go_sdk")
+go_sdk.download(version = "1.26.2")
+use_repo(go_sdk, "go_toolchains")
+
+register_toolchains("@go_toolchains//:all")
+
+go_deps = use_extension("@gazelle//:extensions.bzl", "go_deps")
+go_deps.from_file(go_mod = "//:go.mod")
+use_repo(
+    go_deps,
+    # Direct analyzer deps
+    "co_honnef_go_tools",
+    "com_github_gordonklaus_ineffassign",
+    "com_github_kisielk_errcheck",
+    "com_github_nishanths_exhaustive",
+    "com_github_sonatard_noctx",
+    "com_github_timakin_bodyclose",
+    "org_golang_x_tools",
+    "org_uber_go_nilaway",
+)

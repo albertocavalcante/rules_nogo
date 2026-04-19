@@ -1,0 +1,2 @@
+# Stdlib analyzer targets from golang.org/x/tools/go/analysis/passes/*.
+# Each subdirectory exposes a single go_library target.

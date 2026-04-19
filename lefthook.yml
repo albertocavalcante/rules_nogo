@@ -1,0 +1,13 @@
+pre-commit:
+  commands:
+    go-vet:
+      glob: "**/*.go"
+      run: cd {root} && go vet ./...
+    go-build:
+      glob: "**/*.go"
+      run: cd {root} && go build ./...
+    buildifier:
+      glob: "**/*.{bzl,bazel}"
+      run: buildifier -lint=warn {staged_files}
+    gitleaks:
+      run: gitleaks detect --no-banner -v

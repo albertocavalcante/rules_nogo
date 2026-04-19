@@ -1,0 +1,58 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+# SA: staticcheck correctness checks (honnef.co/go/tools v0.7.0)
+SA_CODES = [
+    "sa1000", "sa1001", "sa1002", "sa1003", "sa1004", "sa1005",
+    "sa1006", "sa1007", "sa1008", "sa1010", "sa1011", "sa1012", "sa1013",
+    "sa1014", "sa1015", "sa1016", "sa1017", "sa1018", "sa1019", "sa1020",
+    "sa1021", "sa1023", "sa1024", "sa1025", "sa1026", "sa1027", "sa1028",
+    "sa1029", "sa1030", "sa1031", "sa1032",
+    "sa2000", "sa2001", "sa2002", "sa2003",
+    "sa3000", "sa3001",
+    "sa4000", "sa4001", "sa4003", "sa4004", "sa4005", "sa4006", "sa4008",
+    "sa4009", "sa4010", "sa4011", "sa4012", "sa4013", "sa4014", "sa4015",
+    "sa4016", "sa4017", "sa4018", "sa4019", "sa4020", "sa4021", "sa4022",
+    "sa4023", "sa4024", "sa4025", "sa4026", "sa4027", "sa4028", "sa4029",
+    "sa4030", "sa4031", "sa4032",
+    "sa5000", "sa5001", "sa5002", "sa5003", "sa5004", "sa5005", "sa5007",
+    "sa5008", "sa5009", "sa5010", "sa5011", "sa5012",
+    "sa6000", "sa6001", "sa6002", "sa6003", "sa6005", "sa6006",
+    "sa9001", "sa9002", "sa9003", "sa9004", "sa9005", "sa9006", "sa9007",
+    "sa9008", "sa9009",
+]
+
+# S1: simplification checks
+S1_CODES = [
+    "s1000", "s1001", "s1002", "s1003", "s1004", "s1005",
+    "s1006", "s1007", "s1008", "s1009", "s1010", "s1011", "s1012",
+    "s1016", "s1017", "s1018", "s1019", "s1020", "s1021", "s1023", "s1024",
+    "s1025", "s1028", "s1029", "s1030", "s1031", "s1032", "s1033",
+    "s1034", "s1035", "s1036", "s1037", "s1038", "s1039", "s1040",
+]
+
+# ST: stylecheck checks
+ST_CODES = [
+    "st1000", "st1001", "st1003", "st1005", "st1006",
+    "st1008", "st1011", "st1012", "st1013", "st1015", "st1016",
+    "st1017", "st1018", "st1019", "st1020", "st1021", "st1022", "st1023",
+]
+
+ALL_CODES = SA_CODES + S1_CODES + ST_CODES
+
+# One go_library per check code, sharing a single analyzer.go source.
+# Bazel stamps the check code into the `name` variable at link time via x_defs.
+[go_library(
+    name = code,
+    srcs = ["analyzer.go"],
+    importpath = "github.com/bazel-contrib/rules_nogo/analyzers/staticcheck/" + code,
+    visibility = ["//visibility:public"],
+    # Dot-free key: rules_go prepends the library's importmap automatically,
+    # producing "github.com/bazel-contrib/rules_nogo/analyzers/staticcheck/<code>.name".
+    # A fully-qualified key with dots is passed as-is and would target the
+    # PARENT package, leaving var name="" and the analyzer as nil.
+    x_defs = {"name": code},
+    deps = [
+        "//analyzers/staticcheck/util",
+        "@org_golang_x_tools//go/analysis",
+    ],
+) for code in ALL_CODES]

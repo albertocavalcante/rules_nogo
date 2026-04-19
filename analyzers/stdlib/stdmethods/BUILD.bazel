@@ -1,0 +1,9 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "stdmethods",
+    srcs = ["stdmethods.go"],
+    importpath = "github.com/bazel-contrib/rules_nogo/analyzers/stdlib/stdmethods",
+    visibility = ["//visibility:public"],
+    deps = ["@org_golang_x_tools//go/analysis/passes/stdmethods"],
+)

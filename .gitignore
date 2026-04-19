@@ -1,0 +1,17 @@
+# Bazel
+/bazel-*
+**/bazel-*
+*.runfiles/
+*.runfiles_manifest
+examples/*/MODULE.bazel.lock
+tests/*/MODULE.bazel.lock
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*~
