@@ -1,0 +1,165 @@
+"""Public API for rules_nogo.
+
+    load("@rules_nogo//nogo:defs.bzl", "nogo", "nogo_config", "BUNDLE_CORRECTNESS")
+
+    nogo_config(
+        name = "config",
+        exclude_generated = True,
+    )
+
+    nogo(
+        name = "my_nogo",
+        config = ":config",
+        deps = BUNDLE_CORRECTNESS,
+    )
+"""
+
+load("@rules_go//go:def.bzl", "go_library", _nogo = "nogo")
+load("//nogo/private:bundles.bzl",
+    _BUNDLE_ALL = "BUNDLE_ALL",
+    _BUNDLE_CORRECTNESS = "BUNDLE_CORRECTNESS",
+    _BUNDLE_SAFETY = "BUNDLE_SAFETY",
+    _BUNDLE_STATICCHECK = "BUNDLE_STATICCHECK",
+    _BUNDLE_STYLE = "BUNDLE_STYLE",
+    _S1_CODES = "S1_CODES",
+    _SA_CODES = "SA_CODES",
+    _ST_CODES = "ST_CODES",
+)
+load("//nogo/private:config.bzl",
+    _DEFAULT_GENERATED_EXCLUDES = "DEFAULT_GENERATED_EXCLUDES",
+    _nogo_config = "nogo_config",
+)
+
+# ── Bundle constants ─────────────────────────────────────────────────
+BUNDLE_SAFETY = _BUNDLE_SAFETY
+BUNDLE_CORRECTNESS = _BUNDLE_CORRECTNESS
+BUNDLE_STYLE = _BUNDLE_STYLE
+BUNDLE_STATICCHECK = _BUNDLE_STATICCHECK
+BUNDLE_ALL = _BUNDLE_ALL
+
+# ── Staticcheck code lists (for cherry-picking) ─────────────────────
+SA_CODES = _SA_CODES
+S1_CODES = _S1_CODES
+ST_CODES = _ST_CODES
+
+# ── Default generated-code exclude patterns ──────────────────────────
+DEFAULT_GENERATED_EXCLUDES = _DEFAULT_GENERATED_EXCLUDES
+
+# ── Macros ───────────────────────────────────────────────────────────
+nogo_config = _nogo_config
+
+def nogo(name, deps = [], vet = True, **kwargs):
+    """Create a nogo target with sensible defaults.
+
+    Wraps rules_go's nogo() with vet=True by default.
+
+    Args:
+        name: Target name.
+        deps: Analyzer targets. Use BUNDLE_* constants, cherry-pick
+              individual labels, or mix both:
+                  deps = BUNDLE_CORRECTNESS + [":my_custom_analyzer"]
+        vet: Include built-in vet analyzers (default True).
+        **kwargs: Forwarded to rules_go's nogo() (config, visibility, etc.).
+
+    Example:
+        nogo(
+            name = "my_nogo",
+            config = ":config",
+            deps = BUNDLE_CORRECTNESS + BUNDLE_STYLE,
+        )
+    """
+    _nogo(name = name, deps = deps, vet = vet, **kwargs)
+
+def staticcheck_analyzers(codes):
+    """Return analyzer labels for staticcheck codes.
+
+    Supports exclusion with '-' prefix:
+        staticcheck_analyzers(SA_CODES + ["-sa4023"])
+
+    Args:
+        codes: Staticcheck codes, optionally prefixed with '-' to exclude.
+
+    Returns:
+        List of "@rules_nogo//analyzers/staticcheck:<code>" labels.
+    """
+    excludes = {c[1:]: True for c in codes if c.startswith("-")}
+    return [
+        "@rules_nogo//analyzers/staticcheck:" + c
+        for c in codes
+        if not c.startswith("-") and c not in excludes
+    ]
+
+def nogo_analyzer(name, analyzer, importpath, go_deps = [], visibility = None):
+    """Register a custom analyzer for use with nogo.
+
+    Creates a go_library target wrapping an analysis.Analyzer from your
+    project's own code or a third-party Go module. Use this instead of
+    writing the boilerplate go_library + wrapper .go file manually.
+
+    The macro generates a Go source file that imports your analyzer and
+    exports it, then creates a go_library target you can add to nogo deps.
+
+    Args:
+        name: Target name. Use this label in your nogo() deps list.
+        analyzer: The fully qualified Go symbol path to the Analyzer var.
+            Format: "import/path.VarName" — the last dot-separated component
+            is the variable name, everything before it is the import path.
+            Examples:
+                "github.com/example/mycheck.Analyzer"
+                "example.com/myproject/tools/nogo/depguard.Analyzer"
+        importpath: Go import path for the generated wrapper library.
+        go_deps: Additional go_library deps needed by the analyzer
+            (typically the Bazel label for the Go module containing it).
+        visibility: Bazel visibility (default: public).
+
+    Example:
+        # Register a custom analyzer from your project
+        nogo_analyzer(
+            name = "depguard",
+            analyzer = "example.com/myproject/tools/nogo/depguard.Analyzer",
+            importpath = "example.com/myproject/nogo/depguard",
+            go_deps = ["//tools/nogo/depguard"],
+        )
+
+        # Then use it in nogo
+        nogo(
+            name = "my_nogo",
+            deps = BUNDLE_CORRECTNESS + [":depguard"],
+        )
+    """
+    # Parse "import/path.VarName" into import path and variable name.
+    last_dot = analyzer.rfind(".")
+    if last_dot < 0:
+        fail("analyzer must be 'import/path.VarName', got: " + analyzer)
+    import_path = analyzer[:last_dot]
+    var_name = analyzer[last_dot + 1:]
+
+    # Generate the wrapper Go source.
+    wrapper_name = name + "_gen"
+    native.genrule(
+        name = wrapper_name,
+        outs = [name + "_nogo_wrapper.go"],
+        cmd = """cat > $@ << 'EOF'
+// Code generated by rules_nogo nogo_analyzer(). DO NOT EDIT.
+package {pkg}
+
+import analyzer_pkg "{import_path}"
+
+var Analyzer = analyzer_pkg.{var_name}
+EOF
+""".format(
+            pkg = name.replace("-", "_").replace(".", "_"),
+            import_path = import_path,
+            var_name = var_name,
+        ),
+    )
+
+    effective_visibility = visibility if visibility else ["//visibility:public"]
+
+    go_library(
+        name = name,
+        srcs = [":" + wrapper_name],
+        importpath = importpath,
+        visibility = effective_visibility,
+        deps = go_deps,
+    )

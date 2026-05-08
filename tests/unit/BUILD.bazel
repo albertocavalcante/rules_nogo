@@ -1,0 +1,8 @@
+load(":bundles_test.bzl", "bundles_test_suite")
+
+bundles_test_suite(name = "bundles_tests")
+
+test_suite(
+    name = "unit",
+    tests = [":bundles_tests"],
+)

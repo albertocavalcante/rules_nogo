@@ -1,0 +1,9 @@
+load("//.bazel/lib:go.bzl", "go_library")
+
+go_library(
+    name = "ineffassign",
+    srcs = ["ineffassign.go"],
+    importpath = "pesado.app/.tmp/rules-publish/rules_nogo/analyzers/ineffassign",
+    visibility = ["//visibility:public"],
+    deps = ["@com_github_gordonklaus_ineffassign//pkg/ineffassign"],
+)

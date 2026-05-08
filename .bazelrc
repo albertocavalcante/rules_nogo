@@ -1,0 +1,9 @@
+common --incompatible_strict_action_env
+
+# CI — quiet, deterministic, cacheable
+common:ci --color=no
+common:ci --curses=no
+common:ci --noshow_progress
+common:ci --noshow_loading_progress
+common:ci --show_timestamps
+test:ci --test_output=errors

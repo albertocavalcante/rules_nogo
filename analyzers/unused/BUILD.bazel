@@ -1,0 +1,12 @@
+load("//.bazel/lib:go.bzl", "go_library")
+
+go_library(
+    name = "unused",
+    srcs = ["unused.go"],
+    importpath = "pesado.app/.tmp/rules-publish/rules_nogo/analyzers/unused",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@co_honnef_go_tools//unused",
+        "@org_golang_x_tools//go/analysis",
+    ],
+)
