@@ -2,6 +2,9 @@ common --incompatible_strict_action_env
 
 # CI — quiet, deterministic, cacheable
 common:ci --color=no
+# Fail when MODULE.bazel.lock is stale instead of silently updating it: mirror-only and
+# offline builds read registry files and extension facts from it.
+common:ci --lockfile_mode=error
 common:ci --curses=no
 common:ci --noshow_progress
 common:ci --noshow_loading_progress
